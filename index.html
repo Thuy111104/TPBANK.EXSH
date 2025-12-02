@@ -1,53 +1,93 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<title>Auto Vote Client-side</title>
+<meta charset="UTF-8" />
+<title>Auto Vote Tool – Browser</title>
+<style>
+body { font-family:sans-serif; padding:20px; }
+textarea { width:100%; height:120px; }
+button { padding:10px 20px; margin-top:10px; }
+.candidate-list { margin-top:20px; }
+.cookie-block { border:1px solid #ccc; padding:10px; margin-bottom:10px; }
+.cookie-block h4 { margin:0 0 5px 0; }
+.status { display:inline-block; width:12px; height:12px; border-radius:50%; margin-left:10px; }
+.pending { background:gray; }
+.success { background:green; }
+.failed { background:red; }
+</style>
 </head>
 <body>
-<h2>Auto Vote Tool</h2>
-<textarea id="cookieBox" placeholder="Nhập cookie, mỗi cookie 1 dòng"></textarea><br>
-<button onclick="startVoting()">Bắt đầu</button>
-<pre id="output"></pre>
+
+<h2>Auto Vote Tool – Client Side</h2>
+
+<label>Nhập các cookie, mỗi cookie 1 dòng:</label>
+<textarea id="cookiesBox"></textarea><br>
+<button onclick="startAutoVote()">Bắt đầu Auto Vote</button>
+
+<div id="cookieList" class="candidate-list"></div>
 
 <script>
-const output = document.getElementById("output");
+const URL = "https://api.fchoice.vn/vote-token.htm?callback=jQuery3510026807873160589635_1764507964293&m=set-vote&sign=27_82&award=27&member=82&typeId=1&_=1764507964296";
 
-function log(msg) {
-    output.textContent += msg + "\n";
-    output.scrollTop = output.scrollHeight;
-}
-
-function sendVote(cookie, index) {
-    fetch("http://localhost:3000/vote", {
-        method: "GET",
-        headers: { "Cookie": cookie }
-    })
-    .then(res => res.text())
-    .then(text => {
-        if (text.includes('"Success":true') || text.includes("Bình chọn thành công")) {
-            log(`[COOKIE ${index}] ✅ Vote thành công!`);
-        } else {
-            log(`[COOKIE ${index}] ❌ Vote thất bại: ${text.slice(0,100)}...`);
-        }
-    })
-    .catch(err => log(`[COOKIE ${index}] Lỗi: ${err}`));
-}
-
-function startVoting() {
-    const cookies = document.getElementById("cookieBox").value.split("\n").map(c=>c.trim()).filter(c=>c);
-    if (cookies.length === 0) return alert("Nhập ít nhất 1 cookie");
-
-    log("=== Bắt đầu auto vote ===");
-
-    cookies.forEach((cookie, index) => {
-        // chạy lần đầu ngay
-        sendVote(cookie, index+1);
-
-        // tự động lặp lại sau 1 giờ (3600000ms)
-        setInterval(() => sendVote(cookie, index+1), 3600000);
+// Tạo UI hiển thị cookie và trạng thái
+function createCookieBlocks(cookies) {
+    const container = document.getElementById('cookieList');
+    container.innerHTML = '';
+    cookies.forEach((ck, i) => {
+        const div = document.createElement('div');
+        div.className = 'cookie-block';
+        div.id = 'cookie-' + i;
+        div.innerHTML = `<h4>Cookie ${i+1}: <span class="status pending"></span></h4><pre>${ck}</pre>`;
+        container.appendChild(div);
     });
 }
+
+// Gửi request vote cho 1 cookie
+async function voteWithCookie(cookie, index) {
+    const statusEl = document.querySelector(`#cookie-${index} .status`);
+    statusEl.className = 'status pending';
+    
+    try {
+        const res = await fetch(URL, {
+            method: 'GET',
+            headers: {
+                'Accept': '*/*',
+                'Referer': 'https://fchoice.vn/',
+                'User-Agent': navigator.userAgent,
+                'Cookie': cookie
+            },
+            credentials: 'include'
+        });
+        const text = await res.text();
+        console.log(`Cookie ${index+1} response:`, text);
+        
+        if (text.includes('"Success":true') || text.includes("Bình chọn thành công")) {
+            statusEl.className = 'status success';
+        } else {
+            statusEl.className = 'status failed';
+        }
+    } catch (err) {
+        console.error(err);
+        statusEl.className = 'status failed';
+    }
+}
+
+// Main: gửi vote tuần tự cho từng cookie
+async function startAutoVote() {
+    const cookieText = document.getElementById('cookiesBox').value.trim();
+    if (!cookieText) return alert('Nhập ít nhất 1 cookie');
+    
+    const cookies = cookieText.split('\n').map(c => c.trim()).filter(c => c);
+    createCookieBlocks(cookies);
+
+    for (let i = 0; i < cookies.length; i++) {
+        await voteWithCookie(cookies[i], i);
+        await new Promise(r => setTimeout(r, 1000)); // delay 1s giữa các cookie
+    }
+
+    alert('Đã hoàn tất gửi vote cho tất cả cookies');
+}
 </script>
+
 </body>
 </html>
