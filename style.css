@@ -1,0 +1,10 @@
+body { font-family:sans-serif; padding:20px; }
+textarea { width:100%; height:120px; }
+button { padding:10px 20px; margin-top:10px; }
+.candidate-list { margin-top:20px; }
+.cookie-block { border:1px solid #ccc; padding:10px; margin-bottom:10px; }
+.cookie-block h4 { margin:0 0 5px 0; }
+.status { display:inline-block; width:12px; height:12px; border-radius:50%; margin-left:10px; }
+.pending { background:gray; }
+.success { background:green; }
+.failed { background:red; }
