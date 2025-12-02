@@ -23,9 +23,17 @@ async function voteWithCookie(cookie, index) {
             method: 'GET',
             headers: {
                 'Accept': '*/*',
+                'Host': 'api.fchoice.vn',
+                'Sec-Fetch-Site': 'same-site',
+                'Cookie': cookie,
                 'Referer': 'https://fchoice.vn/',
+                'Sec-Fetch-Dest': 'script',
+                'Accept-Language': 'vi-VN,vi;q=0.9',
+                'Sec-Fetch-Mode': 'no-cors',
                 'User-Agent': navigator.userAgent,
-                'Cookie': cookie
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Priority': 'u=1, i'
             },
             credentials: 'include'
         });
@@ -53,7 +61,7 @@ async function startAutoVote() {
 
     for (let i = 0; i < cookies.length; i++) {
         await voteWithCookie(cookies[i], i);
-        await new Promise(r => setTimeout(r, 1000)); // delay 1s giữa các cookie
+        await new Promise(r => setTimeout(r, 60000)); // delay 1s giữa các cookie
     }
 
     alert('Đã hoàn tất gửi vote cho tất cả cookies');
