@@ -32,7 +32,7 @@ async function voteWithCookie(cookie, index) {
         const text = await res.text();
         console.log(`Cookie ${index+1} response:`, text);
         
-        if (text.includes('"Success":true') || text.includes("Bình chọn thành công")) {
+        if (text.includes('"Success":true') || text.includes("Bình chọn thành công rồi")) {
             statusEl.className = 'status success';
         } else {
             statusEl.className = 'status failed';
