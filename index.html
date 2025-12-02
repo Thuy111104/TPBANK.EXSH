@@ -6,16 +6,16 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     textarea { width: 100%; height: 120px; }
-    button { padding: 10px 20px; }
-    pre { background: #eee; padding: 10px; }
+    button { padding: 10px 20px; margin-top: 10px; }
+    pre { background: #eee; padding: 10px; white-space: pre-wrap; }
   </style>
 </head>
 <body>
 
-<h2>Gửi Request Tới API</h2>
+<h2>Gửi Request Tới API từ trình duyệt</h2>
 
 <label>Nhập Cookie:</label><br>
-<textarea id="cookieBox"></textarea><br><br>
+<textarea id="cookieBox"></textarea><br>
 
 <button onclick="sendRequest()">Gửi Request</button>
 
@@ -29,7 +29,6 @@ async function sendRequest() {
 
     document.getElementById("output").textContent = "Đang gửi request...";
 
-    // URL API bạn dùng
     const url =
       "https://api.fchoice.vn/vote-token.htm" +
       "?callback=jQuery3510026807873160589635_1764507964293" +
@@ -37,12 +36,27 @@ async function sendRequest() {
       "&_=1764507964296";
 
     try {
+        // Chia cookie thành object để gửi
+        const cookieObj = {};
+        cookieRaw.split(";").forEach(p => {
+            const [k, v] = p.trim().split("=");
+            if (k && v) cookieObj[k] = v;
+        });
+
+        // Tạo string cookie lại
+        const cookieHeader = Object.entries(cookieObj)
+            .map(([k,v]) => `${k}=${v}`)
+            .join("; ");
+
         const res = await fetch(url, {
             method: "GET",
-            credentials: "include",
+            mode: "cors",
+            credentials: "include", // cho phép gửi cookie
             headers: {
                 "Accept": "*/*",
                 "Referer": "https://fchoice.vn/",
+                "User-Agent": navigator.userAgent,
+                "Cookie": cookieHeader
             }
         });
 
