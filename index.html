@@ -1,73 +1,53 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <title>Vote Tool – Client Side Request</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    textarea { width: 100%; height: 120px; }
-    button { padding: 10px 20px; margin-top: 10px; }
-    pre { background: #eee; padding: 10px; white-space: pre-wrap; }
-  </style>
+<meta charset="UTF-8">
+<title>Auto Vote Client-side</title>
 </head>
 <body>
-
-<h2>Gửi Request Tới API từ trình duyệt</h2>
-
-<label>Nhập Cookie:</label><br>
-<textarea id="cookieBox"></textarea><br>
-
-<button onclick="sendRequest()">Gửi Request</button>
-
-<h3>Kết quả:</h3>
+<h2>Auto Vote Tool</h2>
+<textarea id="cookieBox" placeholder="Nhập cookie, mỗi cookie 1 dòng"></textarea><br>
+<button onclick="startVoting()">Bắt đầu</button>
 <pre id="output"></pre>
 
 <script>
-async function sendRequest() {
-    const cookieRaw = document.getElementById("cookieBox").value.trim();
-    if (!cookieRaw) return alert("Không có cookie");
+const output = document.getElementById("output");
 
-    document.getElementById("output").textContent = "Đang gửi request...";
+function log(msg) {
+    output.textContent += msg + "\n";
+    output.scrollTop = output.scrollHeight;
+}
 
-    const url =
-      "https://api.fchoice.vn/vote-token.htm" +
-      "?callback=jQuery3510026807873160589635_1764507964293" +
-      "&m=set-vote&sign=27_82&award=27&member=82&typeId=1" +
-      "&_=1764507964296";
+function sendVote(cookie, index) {
+    fetch("http://localhost:3000/vote", {
+        method: "GET",
+        headers: { "Cookie": cookie }
+    })
+    .then(res => res.text())
+    .then(text => {
+        if (text.includes('"Success":true') || text.includes("Bình chọn thành công")) {
+            log(`[COOKIE ${index}] ✅ Vote thành công!`);
+        } else {
+            log(`[COOKIE ${index}] ❌ Vote thất bại: ${text.slice(0,100)}...`);
+        }
+    })
+    .catch(err => log(`[COOKIE ${index}] Lỗi: ${err}`));
+}
 
-    try {
-        // Chia cookie thành object để gửi
-        const cookieObj = {};
-        cookieRaw.split(";").forEach(p => {
-            const [k, v] = p.trim().split("=");
-            if (k && v) cookieObj[k] = v;
-        });
+function startVoting() {
+    const cookies = document.getElementById("cookieBox").value.split("\n").map(c=>c.trim()).filter(c=>c);
+    if (cookies.length === 0) return alert("Nhập ít nhất 1 cookie");
 
-        // Tạo string cookie lại
-        const cookieHeader = Object.entries(cookieObj)
-            .map(([k,v]) => `${k}=${v}`)
-            .join("; ");
+    log("=== Bắt đầu auto vote ===");
 
-        const res = await fetch(url, {
-            method: "GET",
-            mode: "cors",
-            credentials: "include", // cho phép gửi cookie
-            headers: {
-                "Accept": "*/*",
-                "Referer": "https://fchoice.vn/",
-                "User-Agent": navigator.userAgent,
-                "Cookie": cookieHeader
-            }
-        });
+    cookies.forEach((cookie, index) => {
+        // chạy lần đầu ngay
+        sendVote(cookie, index+1);
 
-        const text = await res.text();
-        document.getElementById("output").textContent = text;
-
-    } catch (err) {
-        document.getElementById("output").textContent = "Lỗi: " + err;
-    }
+        // tự động lặp lại sau 1 giờ (3600000ms)
+        setInterval(() => sendVote(cookie, index+1), 3600000);
+    });
 }
 </script>
-
 </body>
 </html>
